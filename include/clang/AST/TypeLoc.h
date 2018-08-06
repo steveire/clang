@@ -151,8 +151,12 @@ public:
     return SourceRange(getBeginLoc(), getEndLoc());
   }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
 
   /// Get the local source range.
   SourceRange getLocalSourceRange() const {

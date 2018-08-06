@@ -505,9 +505,13 @@ public:
   const CXXScopeSpec &getTypeSpecScope() const { return TypeScope; }
 
   SourceRange getSourceRange() const LLVM_READONLY { return Range; }
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return Range.getBegin(); }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return Range.getEnd(); }
 
   SourceLocation getTypeSpecWidthLoc() const { return TSWRange.getBegin(); }
@@ -1122,9 +1126,13 @@ public:
   SourceRange getSourceRange() const LLVM_READONLY {
     return SourceRange(StartLocation, EndLocation);
   }
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return StartLocation; }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return EndLocation; }
 };
 
@@ -1874,9 +1882,13 @@ public:
 
   /// Get the source range that spans this declarator.
   SourceRange getSourceRange() const LLVM_READONLY { return Range; }
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return Range.getBegin(); }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return Range.getEnd(); }
 
   void SetSourceRange(SourceRange R) { Range = R; }

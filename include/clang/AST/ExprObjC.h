@@ -67,9 +67,13 @@ public:
   SourceLocation getAtLoc() const { return AtLoc; }
   void setAtLoc(SourceLocation L) { AtLoc = L; }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return AtLoc; }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return String->getEndLoc(); }
 
   // Iterators
@@ -96,9 +100,13 @@ public:
   bool getValue() const { return Value; }
   void setValue(bool V) { Value = V; }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return Loc; }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return Loc; }
 
   SourceLocation getLocation() const { return Loc; }
@@ -145,9 +153,13 @@ public:
 
   SourceLocation getAtLoc() const { return Range.getBegin(); }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return Range.getBegin(); }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return Range.getEnd(); }
 
   SourceRange getSourceRange() const LLVM_READONLY {
@@ -200,9 +212,13 @@ public:
   static ObjCArrayLiteral *CreateEmpty(const ASTContext &C,
                                        unsigned NumElements);
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return Range.getBegin(); }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return Range.getEnd(); }
   SourceRange getSourceRange() const LLVM_READONLY { return Range; }
 
@@ -367,9 +383,13 @@ public:
     return DictWithObjectsMethod;
   }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return Range.getBegin(); }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return Range.getEnd(); }
   SourceRange getSourceRange() const LLVM_READONLY { return Range; }
 
@@ -422,9 +442,13 @@ public:
     EncodedType = EncType;
   }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return AtLoc; }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return RParenLoc; }
 
   // Iterators
@@ -459,9 +483,13 @@ public:
   void setAtLoc(SourceLocation L) { AtLoc = L; }
   void setRParenLoc(SourceLocation L) { RParenLoc = L; }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return AtLoc; }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return RParenLoc; }
 
   /// getNumArgs - Return the number of actual arguments to this call.
@@ -510,9 +538,13 @@ public:
   void setAtLoc(SourceLocation L) { AtLoc = L; }
   void setRParenLoc(SourceLocation L) { RParenLoc = L; }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return AtLoc; }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return RParenLoc; }
 
   // Iterators
@@ -572,11 +604,15 @@ public:
   SourceLocation getLocation() const { return Loc; }
   void setLocation(SourceLocation L) { Loc = L; }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY {
     return isFreeIvar() ? Loc : getBase()->getBeginLoc();
   }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return Loc; }
 
   SourceLocation getOpLoc() const { return OpLoc; }
@@ -760,13 +796,17 @@ public:
   /// Determine the type of the base, regardless of the kind of receiver.
   QualType getReceiverType(const ASTContext &ctx) const;
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY {
     return isObjectReceiver() ? getBase()->getBeginLoc()
                               : getReceiverLocation();
   }
 
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return IdLoc; }
 
   // Iterators
@@ -859,12 +899,16 @@ public:
   SourceLocation getRBracket() const { return RBracket; }
   void setRBracket(SourceLocation RB) { RBracket = RB; }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY {
     return SubExprs[BASE]->getBeginLoc();
   }
 
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return RBracket; }
 
   Expr *getBaseExpr() const { return cast<Expr>(SubExprs[BASE]); }
@@ -1418,9 +1462,13 @@ public:
     RBracLoc = R.getEnd();
   }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return LBracLoc; }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return RBracLoc; }
 
   // Iterators
@@ -1497,7 +1545,9 @@ public:
   SourceLocation getOpLoc() const { return OpLoc; }
   void setOpLoc(SourceLocation L) { OpLoc = L; }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY {
     return getBase()->getBeginLoc();
   }
@@ -1506,7 +1556,9 @@ public:
     return getBase()->getEndLoc();
   }
 
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY { return IsaMemberLoc; }
 
   SourceLocation getExprLoc() const LLVM_READONLY { return IsaMemberLoc; }
@@ -1576,11 +1628,15 @@ public:
   child_range children() { return child_range(&Operand, &Operand+1); }
 
   // Source locations are determined by the subexpression.
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY {
     return Operand->getBeginLoc();
   }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY {
     return Operand->getEndLoc();
   }
@@ -1642,10 +1698,14 @@ public:
   /// The location of the bridge keyword.
   SourceLocation getBridgeKeywordLoc() const { return BridgeKeywordLoc; }
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return LParenLoc; }
 
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const LLVM_READONLY {
     return getSubExpr()->getEndLoc();
   }
@@ -1684,9 +1744,13 @@ public:
   explicit ObjCAvailabilityCheckExpr(EmptyShell Shell)
       : Expr(ObjCAvailabilityCheckExprClass, Shell) {}
 
-  SourceLocation getLocStart() const LLVM_READONLY { return getBeginLoc(); }
+  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
+    return getBeginLoc();
+  }
   SourceLocation getBeginLoc() const { return AtLoc; }
-  SourceLocation getLocEnd() const LLVM_READONLY { return getEndLoc(); }
+  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
+    return getEndLoc();
+  }
   SourceLocation getEndLoc() const { return RParen; }
   SourceRange getSourceRange() const { return {AtLoc, RParen}; }
 
