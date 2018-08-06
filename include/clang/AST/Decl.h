@@ -614,9 +614,6 @@ public:
     return SourceRange(LocStart, RBraceLoc);
   }
 
-  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
-    return getBeginLoc();
-  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return LocStart; }
   SourceLocation getRBraceLoc() const { return RBraceLoc; }
   void setLocStart(SourceLocation L) { LocStart = L; }
@@ -738,9 +735,6 @@ public:
 
   SourceRange getSourceRange() const override LLVM_READONLY;
 
-  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
-    return getBeginLoc();
-  }
   SourceLocation getBeginLoc() const LLVM_READONLY {
     return getOuterLocStart();
   }
@@ -2871,9 +2865,6 @@ public:
   const Type *getTypeForDecl() const { return TypeForDecl; }
   void setTypeForDecl(const Type *TD) { TypeForDecl = TD; }
 
-  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
-    return getBeginLoc();
-  }
   SourceLocation getBeginLoc() const LLVM_READONLY { return LocStart; }
   void setLocStart(SourceLocation L) { LocStart = L; }
   SourceRange getSourceRange() const override LLVM_READONLY {
@@ -4201,9 +4192,6 @@ public:
   SourceLocation getRBraceLoc() const { return RBraceLoc; }
   void setRBraceLoc(SourceLocation L) { RBraceLoc = L; }
 
-  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
-    return getEndLoc();
-  }
   SourceLocation getEndLoc() const LLVM_READONLY {
     if (RBraceLoc.isValid())
       return RBraceLoc;

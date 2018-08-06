@@ -67,9 +67,6 @@ public:
 
   void setStartLoc(SourceLocation Loc) { LocStart = Loc; }
 
-  [[deprecated]] SourceLocation getStartLoc() const LLVM_READONLY {
-    return getBeginLoc();
-  }
   SourceLocation getBeginLoc() const {
     assert(LocStart && "Region has no start location");
     return *LocStart;

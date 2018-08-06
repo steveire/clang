@@ -642,13 +642,6 @@ public:
     return SourceRange(getBeginLoc(), getEndLoc());
   }
 
-  [[deprecated]] SourceLocation getLocStart() const LLVM_READONLY {
-    return getBeginLoc();
-  }
-
-  [[deprecated]] SourceLocation getLocEnd() const LLVM_READONLY {
-    return getEndLoc();
-  }
   SourceLocation getEndLoc() const LLVM_READONLY {
     SourceLocation EndLoc = getEndLocPrivate();
     return EndLoc.isValid() ? EndLoc : getBeginLoc();
