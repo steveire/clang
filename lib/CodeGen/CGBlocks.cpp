@@ -1284,7 +1284,7 @@ void CodeGenFunction::setBlockContextParameter(const ImplicitParamDecl *D,
     }
   }
 
-  SourceLocation StartLoc = BlockInfo->getBlockExpr()->getBody()->getLocStart();
+  SourceLocation StartLoc = BlockInfo->getBlockExpr()->getBody()->getBeginLoc();
   ApplyDebugLocation Scope(*this, StartLoc);
 
   // Instead of messing around with LocalDeclMap, just set the value
@@ -1379,7 +1379,7 @@ CodeGenFunction::GenerateBlockFunction(GlobalDecl GD,
   // Begin generating the function.
   StartFunction(blockDecl, fnType->getReturnType(), fn, fnInfo, args,
                 blockDecl->getLocation(),
-                blockInfo.getBlockExpr()->getBody()->getLocStart());
+                blockInfo.getBlockExpr()->getBody()->getBeginLoc());
 
   // Okay.  Undo some of what StartFunction did.
 
@@ -1688,7 +1688,7 @@ CodeGenFunction::GenerateCopyHelperFunction(const CGBlockInfo &blockInfo) {
   CGM.SetInternalFunctionAttributes(GlobalDecl(), Fn, FI);
 
   StartFunction(FD, C.VoidTy, Fn, FI, args);
-  ApplyDebugLocation NL{*this, blockInfo.getBlockExpr()->getLocStart()};
+  ApplyDebugLocation NL{*this, blockInfo.getBlockExpr()->getBeginLoc()};
   llvm::Type *structPtrTy = blockInfo.StructureType->getPointerTo();
 
   Address src = GetAddrOfLocalVar(&SrcDecl);
@@ -1874,7 +1874,7 @@ CodeGenFunction::GenerateDestroyHelperFunction(const CGBlockInfo &blockInfo) {
   CGM.SetInternalFunctionAttributes(GlobalDecl(), Fn, FI);
 
   StartFunction(FD, C.VoidTy, Fn, FI, args);
-  ApplyDebugLocation NL{*this, blockInfo.getBlockExpr()->getLocStart()};
+  ApplyDebugLocation NL{*this, blockInfo.getBlockExpr()->getBeginLoc()};
 
   llvm::Type *structPtrTy = blockInfo.StructureType->getPointerTo();
 
