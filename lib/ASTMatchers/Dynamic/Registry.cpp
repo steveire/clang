@@ -561,9 +561,8 @@ std::vector<ArgKind> Registry::getAcceptedCompletionTypes(
   return std::vector<ArgKind>(TypeSet.begin(), TypeSet.end());
 }
 
-std::vector<MatcherCompletion>
-Registry::getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes) {
-  std::vector<MatcherCompletion> Completions;
+template <typename T>
+void processAcceptableMatchers(ArrayRef<ArgKind> AcceptedTypes, T func) {
 
   // Search the registry for acceptable matchers.
   for (const auto &M : RegistryData->constructors()) {
@@ -593,49 +592,65 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes) {
     }
 
     if (!RetKinds.empty() && MaxSpecificity > 0) {
-      std::string Decl;
-      llvm::raw_string_ostream OS(Decl);
-
-      if (IsPolymorphic) {
-        OS << "Matcher<T> " << Name << "(Matcher<T>";
-      } else {
-        OS << "Matcher<" << RetKinds << "> " << Name << "(";
-        for (const std::vector<ArgKind> &Arg : ArgsKinds) {
-          if (&Arg != &ArgsKinds[0])
-            OS << ", ";
-
-          bool FirstArgKind = true;
-          std::set<ASTNodeKind> MatcherKinds;
-          // Two steps. First all non-matchers, then matchers only.
-          for (const ArgKind &AK : Arg) {
-            if (AK.getArgKind() == ArgKind::AK_Matcher) {
-              MatcherKinds.insert(AK.getMatcherKind());
-            } else {
-              if (!FirstArgKind) OS << "|";
-              FirstArgKind = false;
-              OS << AK.asString();
-            }
-          }
-          if (!MatcherKinds.empty()) {
-            if (!FirstArgKind) OS << "|";
-            OS << "Matcher<" << MatcherKinds << ">";
-          }
-        }
-      }
-      if (Matcher.isVariadic())
-        OS << "...";
-      OS << ")";
-
-      std::string TypedText = Name;
-      TypedText += "(";
-      if (ArgsKinds.empty())
-        TypedText += ")";
-      else if (ArgsKinds[0][0].getArgKind() == ArgKind::AK_String)
-        TypedText += "\"";
-
-      Completions.emplace_back(TypedText, OS.str(), MaxSpecificity);
+      func(Name, Matcher, RetKinds, ArgsKinds, MaxSpecificity);
     }
   }
+}
+
+std::vector<MatcherCompletion>
+Registry::getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes) {
+  std::vector<MatcherCompletion> Completions;
+
+  processAcceptableMatchers(
+      AcceptedTypes,
+      [&Completions](StringRef Name, const MatcherDescriptor &Matcher,
+                     std::set<ASTNodeKind> &RetKinds,
+                     std::vector<std::vector<ArgKind>> ArgsKinds,
+                     unsigned MaxSpecificity) {
+        std::string Decl;
+        llvm::raw_string_ostream OS(Decl);
+
+        if (Matcher.isPolymorphic()) {
+          OS << "Matcher<T> " << Name << "(Matcher<T>";
+        } else {
+          OS << "Matcher<" << RetKinds << "> " << Name << "(";
+          for (const std::vector<ArgKind> &Arg : ArgsKinds) {
+            if (&Arg != &ArgsKinds[0])
+              OS << ", ";
+
+            bool FirstArgKind = true;
+            std::set<ASTNodeKind> MatcherKinds;
+            // Two steps. First all non-matchers, then matchers only.
+            for (const ArgKind &AK : Arg) {
+              if (AK.getArgKind() == ArgKind::AK_Matcher) {
+                MatcherKinds.insert(AK.getMatcherKind());
+              } else {
+                if (!FirstArgKind)
+                  OS << "|";
+                FirstArgKind = false;
+                OS << AK.asString();
+              }
+            }
+            if (!MatcherKinds.empty()) {
+              if (!FirstArgKind)
+                OS << "|";
+              OS << "Matcher<" << MatcherKinds << ">";
+            }
+          }
+        }
+        if (Matcher.isVariadic())
+          OS << "...";
+        OS << ")";
+
+        std::string TypedText = Name;
+        TypedText += "(";
+        if (ArgsKinds.empty())
+          TypedText += ")";
+        else if (ArgsKinds[0][0].getArgKind() == ArgKind::AK_String)
+          TypedText += "\"";
+
+        Completions.emplace_back(TypedText, OS.str(), MaxSpecificity);
+      });
 
   return Completions;
 }
