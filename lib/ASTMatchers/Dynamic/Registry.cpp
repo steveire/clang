@@ -601,6 +601,42 @@ std::vector<MatchingMatcher>
 Registry::getMatchingMatchers(ast_type_traits::ASTNodeKind StaticType) {
   std::vector<MatchingMatcher> Result;
 
+  static std::vector<StringRef> excludedMatchers{
+      "allOf",
+      "anyOf",
+      "anything",
+      "containsDeclaration",
+      "eachOf",
+      "equalsNode",
+      "findAll",
+      "forEach",
+      "forEachConstructorInitializer",
+      "forEachDescendant",
+      "forEachOverridden",
+      "forEachSwitchCase",
+      "has",
+      "hasAncestor",
+      "hasAnyArgument",
+      "hasAnyConstructorInitializer",
+      "hasAnyDeclaration",
+      "hasAnyName",
+      "hasAnyParameter",
+      "hasAnySelector",
+      "hasAnySubstatement",
+      "hasAnyTemplateArgument",
+      "hasAnyUsingShadowDecl",
+      "hasArgumentOfType",
+      "hasDescendant",
+      "hasEitherOperand",
+      "hasMethod",
+      "hasParent",
+      "isExpansionInFileMatching",
+      "isSameOrDerivedFrom",
+      "matchesName",
+      "matchesSelector",
+      "unless"};
+  assert(std::is_sorted(excludedMatchers.begin(), excludedMatchers.end()));
+
   std::vector<ArgKind> AcceptedTypes;
   AcceptedTypes.push_back(StaticType);
 
@@ -609,7 +645,10 @@ Registry::getMatchingMatchers(ast_type_traits::ASTNodeKind StaticType) {
                                std::set<ASTNodeKind> &RetKinds,
                                std::vector<std::vector<ArgKind>> ArgsKinds,
                                unsigned MaxSpecificity) {
-        Result.emplace_back((Name + "()").str());
+        if (!std::binary_search(excludedMatchers.begin(),
+                                excludedMatchers.end(), Name)) {
+          Result.emplace_back((Name + "()").str());
+        }
       });
 
   return Result;

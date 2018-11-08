@@ -579,6 +579,8 @@ TEST_F(RegistryTest, MatchingMatchers) {
   EXPECT_TRUE(!Contains(Matchers, "functionDecl()"));
 
   EXPECT_TRUE(Contains(Matchers, "cxxMethodDecl()"));
+
+  EXPECT_TRUE(!Contains(Matchers, "has()"));
 }
 
 } // end anonymous namespace
