@@ -1577,6 +1577,7 @@ class VariadicAllOfMatcher
     : public VariadicFunction<BindableMatcher<T>, Matcher<T>,
                               makeAllOfComposite<T>> {
 public:
+  using Type = T;
   VariadicAllOfMatcher() {}
 };
 

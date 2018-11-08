@@ -44,18 +44,56 @@ using internal::MatcherDescriptor;
 
 using ConstructorMap = llvm::StringMap<std::unique_ptr<const MatcherDescriptor>>;
 
+using NodeConstructorMap =
+    std::map<ast_type_traits::ASTNodeKind,
+             std::pair<std::string, const internal::MatcherDescriptor *>>;
+
 class RegistryMaps {
 public:
   RegistryMaps();
   ~RegistryMaps();
 
   const ConstructorMap &constructors() const { return Constructors; }
+  const NodeConstructorMap &nodeConstructors() const {
+    return NodeConstructors;
+  }
+
+  void registerNodeMatcher(ast_type_traits::ASTNodeKind kind,
+                           internal::MatcherDescriptor *Callback);
 
 private:
   void registerMatcher(StringRef MatcherName,
                        std::unique_ptr<MatcherDescriptor> Callback);
 
+  template <typename MatcherType>
+  void registerIfNodeMatcher(MatcherType,
+                             internal::MatcherDescriptor *matchDescriptor,
+                             StringRef) {}
+
+  template <typename ResultT>
+  void registerIfNodeMatcher(
+      ast_matchers::internal::VariadicAllOfMatcher<ResultT> VarFunc,
+      internal::MatcherDescriptor *matchDescriptor, StringRef MatcherName) {
+    auto K = ast_type_traits::ASTNodeKind::getFromNodeKind<
+        typename ast_matchers::internal::VariadicAllOfMatcher<ResultT>::Type>();
+    if (!K.isNone()) {
+      NodeConstructors[K] = std::make_pair(MatcherName, matchDescriptor);
+    }
+  }
+
+  template <typename BaseT, typename DerivedT>
+  void registerIfNodeMatcher(
+      ast_matchers::internal::VariadicDynCastAllOfMatcher<BaseT, DerivedT>
+          VarFunc,
+      internal::MatcherDescriptor *matchDescriptor, StringRef MatcherName) {
+    auto K = ast_type_traits::ASTNodeKind::getFromNodeKind<DerivedT>();
+    if (!K.isNone()) {
+      NodeConstructors[K] = std::make_pair(MatcherName, matchDescriptor);
+    }
+  }
+
   ConstructorMap Constructors;
+  NodeConstructorMap NodeConstructors;
 };
 
 } // namespace
@@ -67,8 +105,13 @@ void RegistryMaps::registerMatcher(
 }
 
 #define REGISTER_MATCHER(name)                                                 \
-  registerMatcher(#name, internal::makeMatcherAutoMarshall(                    \
-                             ::clang::ast_matchers::name, #name));
+  {                                                                            \
+    auto matcherDescriptor =                                                   \
+        internal::makeMatcherAutoMarshall(::clang::ast_matchers::name, #name); \
+    registerIfNodeMatcher(::clang::ast_matchers::name,                         \
+                          matcherDescriptor.get(), #name);                     \
+    registerMatcher(#name, std::move(matcherDescriptor));                      \
+  }
 
 #define REGISTER_MATCHER_OVERLOAD(name)                                        \
   registerMatcher(#name,                                                       \
