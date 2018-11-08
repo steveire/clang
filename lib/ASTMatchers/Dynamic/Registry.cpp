@@ -640,8 +640,26 @@ void processAcceptableMatchers(ArrayRef<ArgKind> AcceptedTypes, T func) {
   }
 }
 
+using SR = ast_matchers::dynamic::SourceRange;
+
+llvm::Optional<std::pair<ASTNodeKind, std::string>>
+getNodeConstructorType(MatcherCtor targetCtor) {
+  auto const &ctors = RegistryData->nodeConstructors();
+
+  for (auto ctor : ctors) {
+    if (ctor.second.second == targetCtor)
+      return std::make_pair(ctor.first, ctor.second.first);
+  }
+  return llvm::None;
+}
+
 std::vector<MatchingMatcher>
-Registry::getMatchingMatchers(ast_type_traits::ASTNodeKind StaticType) {
+getDerivedResults(ast_type_traits::ASTNodeKind StaticType, StringRef Name);
+
+std::vector<MatchingMatcher>
+getMatchingMatchersImpl(ast_type_traits::ASTNodeKind StaticType,
+                        bool ExactOnly = false) {
+
   std::vector<MatchingMatcher> Result;
 
   static std::vector<StringRef> excludedMatchers{
@@ -684,15 +702,72 @@ Registry::getMatchingMatchers(ast_type_traits::ASTNodeKind StaticType) {
   AcceptedTypes.push_back(StaticType);
 
   processAcceptableMatchers(
-      AcceptedTypes, [&Result](StringRef Name, const MatcherDescriptor &Matcher,
-                               std::set<ASTNodeKind> &RetKinds,
-                               std::vector<std::vector<ArgKind>> ArgsKinds,
-                               unsigned MaxSpecificity) {
+      AcceptedTypes, [&](StringRef Name, const MatcherDescriptor &Matcher,
+                         std::set<ASTNodeKind> &RetKinds,
+                         std::vector<std::vector<ArgKind>> ArgsKinds,
+                         unsigned MaxSpecificity) {
+        {
+          unsigned Specificity;
+          ASTNodeKind LeastDerivedKind;
+          if (ExactOnly) {
+            auto isConv = Matcher.isConvertibleTo(StaticType, &Specificity,
+                                                  &LeastDerivedKind);
+            if (isConv && !LeastDerivedKind.isSame(StaticType)) {
+              return;
+            }
+          }
+        }
+
+        {
+          auto TypeForMatcherOpt = getNodeConstructorType(&Matcher);
+          if (TypeForMatcherOpt) {
+            // TODO: Should not be needed.
+            // Actually, all base types should be part of it.
+            // Nah, only all derived types.
+            if (TypeForMatcherOpt->first.isBaseOf(StaticType)) {
+              return;
+            }
+            if (StaticType.isBaseOf(TypeForMatcherOpt->first)) {
+              auto derRes = getDerivedResults(TypeForMatcherOpt->first, Name);
+              Result.insert(Result.end(), derRes.begin(), derRes.end());
+              return;
+            }
+          }
+        }
+
         if (!std::binary_search(excludedMatchers.begin(),
                                 excludedMatchers.end(), Name)) {
           Result.emplace_back((Name + "()").str());
         }
       });
+
+  return Result;
+}
+
+std::vector<MatchingMatcher>
+getDerivedResults(ast_type_traits::ASTNodeKind StaticType, StringRef Name) {
+  auto NestedResult = getMatchingMatchersImpl(StaticType, true);
+
+  std::vector<MatchingMatcher> Result;
+
+  Diagnostics DiagnosticIgnorer;
+
+  for (auto item : NestedResult) {
+
+    auto nestedMatcherName = item.MatcherString;
+
+    nestedMatcherName = Name.str() + "(" + nestedMatcherName + ")";
+
+    Result.emplace_back(nestedMatcherName);
+  }
+
+  return Result;
+}
+
+std::vector<MatchingMatcher>
+Registry::getMatchingMatchers(ast_type_traits::ASTNodeKind StaticType) {
+
+  std::vector<MatchingMatcher> Result = getMatchingMatchersImpl(StaticType);
 
   return Result;
 }

@@ -571,14 +571,14 @@ TEST_F(RegistryTest, MatchingMatchers) {
   EXPECT_TRUE(Contains(Matchers, "hasType()"));
   EXPECT_TRUE(Contains(Matchers, "hasTypeLoc()"));
   EXPECT_TRUE(Contains(Matchers, "parameterCountIs()"));
+  EXPECT_TRUE(Contains(Matchers, "cxxMethodDecl(isOverride())"));
 
   EXPECT_TRUE(!Contains(Matchers, "decl()"));
   EXPECT_TRUE(!Contains(Matchers, "namedDecl()"));
   EXPECT_TRUE(!Contains(Matchers, "valueDecl()"));
   EXPECT_TRUE(!Contains(Matchers, "declaratorDecl()"));
   EXPECT_TRUE(!Contains(Matchers, "functionDecl()"));
-
-  EXPECT_TRUE(Contains(Matchers, "cxxMethodDecl()"));
+  EXPECT_TRUE(!Contains(Matchers, "cxxMethodDecl()"));
 
   EXPECT_TRUE(!Contains(Matchers, "has()"));
 }
