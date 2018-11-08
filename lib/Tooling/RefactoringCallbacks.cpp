@@ -213,8 +213,8 @@ void ReplaceNodeWithTemplate::run(
                      << " used in replacement template not bound in Matcher \n";
         llvm::report_fatal_error("Unbound node in replacement template.");
       }
-      CharSourceRange Source =
-          CharSourceRange::getTokenRange(NodeIter->second.getSourceRange());
+      CharSourceRange Source = CharSourceRange::getTokenRange(
+          NodeIter->second.first.getSourceRange());
       ToText += Lexer::getSourceText(Source, *Result.SourceManager,
                                      Result.Context->getLangOpts());
       break;
@@ -227,8 +227,8 @@ void ReplaceNodeWithTemplate::run(
     llvm::report_fatal_error("FromId node not bound in MatchResult");
   }
   auto Replacement =
-      tooling::Replacement(*Result.SourceManager, &NodeMap.at(FromId), ToText,
-                           Result.Context->getLangOpts());
+      tooling::Replacement(*Result.SourceManager, &NodeMap.at(FromId).first,
+                           ToText, Result.Context->getLangOpts());
   llvm::Error Err = Replace.add(Replacement);
   if (Err) {
     llvm::errs() << "Query and replace failed in " << Replacement.getFilePath()

@@ -149,8 +149,9 @@ public:
   /// Adds \c Node to the map with key \c ID.
   ///
   /// The node's base type should be in NodeBaseType or it will be unaccessible.
-  void addNode(StringRef ID, const ast_type_traits::DynTypedNode& DynNode) {
-    NodeMap[ID] = DynNode;
+  void addNode(StringRef ID, const ast_type_traits::DynTypedNode &DynNode,
+               ast_type_traits::ASTNodeKind NodeKind) {
+    NodeMap[ID] = std::make_pair(DynNode, NodeKind);
   }
 
   /// Returns the AST node bound to \c ID.
@@ -163,7 +164,7 @@ public:
     if (It == NodeMap.end()) {
       return nullptr;
     }
-    return It->second.get<T>();
+    return It->second.first.get<T>();
   }
 
   ast_type_traits::DynTypedNode getNode(StringRef ID) const {
@@ -171,7 +172,7 @@ public:
     if (It == NodeMap.end()) {
       return ast_type_traits::DynTypedNode();
     }
-    return It->second;
+    return It->second.first;
   }
 
   /// Imposes an order on BoundNodesMaps.
@@ -184,7 +185,9 @@ public:
   /// Note that we're using std::map here, as for memoization:
   /// - we need a comparison operator
   /// - we need an assignment operator
-  using IDToNodeMap = std::map<std::string, ast_type_traits::DynTypedNode>;
+  using IDToNodeMap =
+      std::map<std::string, std::pair<ast_type_traits::DynTypedNode,
+                                      ast_type_traits::ASTNodeKind>>;
 
   const IDToNodeMap &getMap() const {
     return NodeMap;
@@ -194,7 +197,7 @@ public:
   /// stored nodes have memoization data.
   bool isComparable() const {
     for (const auto &IDAndNode : NodeMap) {
-      if (!IDAndNode.second.getMemoizationData())
+      if (!IDAndNode.second.first.getMemoizationData())
         return false;
     }
     return true;
@@ -223,11 +226,12 @@ public:
   };
 
   /// Add a binding from an id to a node.
-  void setBinding(StringRef Id, const ast_type_traits::DynTypedNode &DynNode) {
+  void setBinding(StringRef Id, const ast_type_traits::DynTypedNode &DynNode,
+                  ast_type_traits::ASTNodeKind NodeKind) {
     if (Bindings.empty())
       Bindings.emplace_back();
     for (BoundNodesMap &Binding : Bindings)
-      Binding.addNode(Id, DynNode);
+      Binding.addNode(Id, DynNode, NodeKind);
   }
 
   /// Adds a branch in the tree.
@@ -282,7 +286,8 @@ public:
   /// the AST via \p Finder.
   virtual bool dynMatches(const ast_type_traits::DynTypedNode &DynNode,
                           ASTMatchFinder *Finder,
-                          BoundNodesTreeBuilder *Builder) const = 0;
+                          BoundNodesTreeBuilder *Builder,
+                          ast_type_traits::ASTNodeKind NodeKind) const = 0;
 };
 
 /// Generic interface for matchers on an AST node of type T.
@@ -304,8 +309,8 @@ public:
                        BoundNodesTreeBuilder *Builder) const = 0;
 
   bool dynMatches(const ast_type_traits::DynTypedNode &DynNode,
-                  ASTMatchFinder *Finder,
-                  BoundNodesTreeBuilder *Builder) const override {
+                  ASTMatchFinder *Finder, BoundNodesTreeBuilder *Builder,
+                  ast_type_traits::ASTNodeKind NodeKind) const override {
     return matches(DynNode.getUnchecked<T>(), Finder, Builder);
   }
 };

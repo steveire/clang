@@ -349,12 +349,12 @@ public:
       BoundNodes::IDToNodeMap::const_iterator I = M.find(Id);
       EXPECT_NE(M.end(), I);
       if (I != M.end()) {
-        EXPECT_EQ(Nodes->getNodeAs<T>(Id), I->second.get<T>());
+        EXPECT_EQ(Nodes->getNodeAs<T>(Id), I->second.first.get<T>());
       }
       return true;
     }
     EXPECT_TRUE(M.count(Id) == 0 ||
-      M.find(Id)->second.template get<T>() == nullptr);
+      M.find(Id)->second.first.get<T>() == nullptr);
     return false;
   }
 

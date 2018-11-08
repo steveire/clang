@@ -52,21 +52,25 @@ namespace internal {
 
 bool NotUnaryOperator(const ast_type_traits::DynTypedNode &DynNode,
                       ASTMatchFinder *Finder, BoundNodesTreeBuilder *Builder,
+                      ast_type_traits::ASTNodeKind NodeKind,
                       ArrayRef<DynTypedMatcher> InnerMatchers);
 
 bool AllOfVariadicOperator(const ast_type_traits::DynTypedNode &DynNode,
                            ASTMatchFinder *Finder,
                            BoundNodesTreeBuilder *Builder,
+                           ast_type_traits::ASTNodeKind NodeKind,
                            ArrayRef<DynTypedMatcher> InnerMatchers);
 
 bool EachOfVariadicOperator(const ast_type_traits::DynTypedNode &DynNode,
                             ASTMatchFinder *Finder,
                             BoundNodesTreeBuilder *Builder,
+                            ast_type_traits::ASTNodeKind NodeKind,
                             ArrayRef<DynTypedMatcher> InnerMatchers);
 
 bool AnyOfVariadicOperator(const ast_type_traits::DynTypedNode &DynNode,
                            ASTMatchFinder *Finder,
                            BoundNodesTreeBuilder *Builder,
+                           ast_type_traits::ASTNodeKind NodeKind,
                            ArrayRef<DynTypedMatcher> InnerMatchers);
 
 void BoundNodesTreeBuilder::visitMatches(Visitor *ResultVisitor) {
@@ -81,7 +85,8 @@ namespace {
 
 using VariadicOperatorFunction = bool (*)(
     const ast_type_traits::DynTypedNode &DynNode, ASTMatchFinder *Finder,
-    BoundNodesTreeBuilder *Builder, ArrayRef<DynTypedMatcher> InnerMatchers);
+    BoundNodesTreeBuilder *Builder, ast_type_traits::ASTNodeKind NodeKind,
+    ArrayRef<DynTypedMatcher> InnerMatchers);
 
 template <VariadicOperatorFunction Func>
 class VariadicMatcher : public DynMatcherInterface {
@@ -90,9 +95,9 @@ public:
       : InnerMatchers(std::move(InnerMatchers)) {}
 
   bool dynMatches(const ast_type_traits::DynTypedNode &DynNode,
-                  ASTMatchFinder *Finder,
-                  BoundNodesTreeBuilder *Builder) const override {
-    return Func(DynNode, Finder, Builder, InnerMatchers);
+                  ASTMatchFinder *Finder, BoundNodesTreeBuilder *Builder,
+                  ast_type_traits::ASTNodeKind NodeKind) const override {
+    return Func(DynNode, Finder, Builder, NodeKind, InnerMatchers);
   }
 
 private:
@@ -106,10 +111,11 @@ public:
       : ID(ID), InnerMatcher(std::move(InnerMatcher)) {}
 
   bool dynMatches(const ast_type_traits::DynTypedNode &DynNode,
-                  ASTMatchFinder *Finder,
-                  BoundNodesTreeBuilder *Builder) const override {
-    bool Result = InnerMatcher->dynMatches(DynNode, Finder, Builder);
-    if (Result) Builder->setBinding(ID, DynNode);
+                  ASTMatchFinder *Finder, BoundNodesTreeBuilder *Builder,
+                  ast_type_traits::ASTNodeKind NodeKind) const override {
+    bool Result = InnerMatcher->dynMatches(DynNode, Finder, Builder, NodeKind);
+    if (Result)
+      Builder->setBinding(ID, DynNode, NodeKind);
     return Result;
   }
 
@@ -130,7 +136,8 @@ public:
   }
 
   bool dynMatches(const ast_type_traits::DynTypedNode &, ASTMatchFinder *,
-                  BoundNodesTreeBuilder *) const override {
+                  BoundNodesTreeBuilder *,
+                  ast_type_traits::ASTNodeKind) const override {
     return true;
   }
 };
@@ -213,7 +220,7 @@ bool DynTypedMatcher::matches(const ast_type_traits::DynTypedNode &DynNode,
                               ASTMatchFinder *Finder,
                               BoundNodesTreeBuilder *Builder) const {
   if (RestrictKind.isBaseOf(DynNode.getNodeKind()) &&
-      Implementation->dynMatches(DynNode, Finder, Builder)) {
+      Implementation->dynMatches(DynNode, Finder, Builder, RestrictKind)) {
     return true;
   }
   // Delete all bindings when a matcher does not match.
@@ -227,7 +234,7 @@ bool DynTypedMatcher::matchesNoKindCheck(
     const ast_type_traits::DynTypedNode &DynNode, ASTMatchFinder *Finder,
     BoundNodesTreeBuilder *Builder) const {
   assert(RestrictKind.isBaseOf(DynNode.getNodeKind()));
-  if (Implementation->dynMatches(DynNode, Finder, Builder)) {
+  if (Implementation->dynMatches(DynNode, Finder, Builder, RestrictKind)) {
     return true;
   }
   // Delete all bindings when a matcher does not match.
@@ -262,6 +269,7 @@ void BoundNodesTreeBuilder::addMatch(const BoundNodesTreeBuilder &Other) {
 
 bool NotUnaryOperator(const ast_type_traits::DynTypedNode &DynNode,
                       ASTMatchFinder *Finder, BoundNodesTreeBuilder *Builder,
+                      ast_type_traits::ASTNodeKind NodeKind,
                       ArrayRef<DynTypedMatcher> InnerMatchers) {
   if (InnerMatchers.size() != 1)
     return false;
@@ -283,6 +291,7 @@ bool NotUnaryOperator(const ast_type_traits::DynTypedNode &DynNode,
 bool AllOfVariadicOperator(const ast_type_traits::DynTypedNode &DynNode,
                            ASTMatchFinder *Finder,
                            BoundNodesTreeBuilder *Builder,
+                           ast_type_traits::ASTNodeKind NodeKind,
                            ArrayRef<DynTypedMatcher> InnerMatchers) {
   // allOf leads to one matcher for each alternative in the first
   // matcher combined with each alternative in the second matcher.
@@ -297,6 +306,7 @@ bool AllOfVariadicOperator(const ast_type_traits::DynTypedNode &DynNode,
 bool EachOfVariadicOperator(const ast_type_traits::DynTypedNode &DynNode,
                             ASTMatchFinder *Finder,
                             BoundNodesTreeBuilder *Builder,
+                            ast_type_traits::ASTNodeKind NodeKind,
                             ArrayRef<DynTypedMatcher> InnerMatchers) {
   BoundNodesTreeBuilder Result;
   bool Matched = false;
@@ -314,6 +324,7 @@ bool EachOfVariadicOperator(const ast_type_traits::DynTypedNode &DynNode,
 bool AnyOfVariadicOperator(const ast_type_traits::DynTypedNode &DynNode,
                            ASTMatchFinder *Finder,
                            BoundNodesTreeBuilder *Builder,
+                           ast_type_traits::ASTNodeKind NodeKind,
                            ArrayRef<DynTypedMatcher> InnerMatchers) {
   for (const DynTypedMatcher &InnerMatcher : InnerMatchers) {
     BoundNodesTreeBuilder Result = *Builder;

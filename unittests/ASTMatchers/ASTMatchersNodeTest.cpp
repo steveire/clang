@@ -1724,12 +1724,17 @@ TEST(MatchFinderAPI, matchesDynamic) {
   std::string SourceCode = "struct A { void f() {} };";
   auto Matcher = functionDecl(isDefinition()).bind("method");
 
+  using namespace ast_type_traits;
+
   auto astUnit = tooling::buildASTFromCode(SourceCode);
 
   auto GlobalBoundNodes = matchDynamic(Matcher, astUnit->getASTContext());
 
   EXPECT_EQ(GlobalBoundNodes.size(), 1u);
   EXPECT_EQ(GlobalBoundNodes[0].getMap().size(), 1u);
+  auto GlobalMapPair = *GlobalBoundNodes[0].getMap().begin();
+  EXPECT_TRUE(GlobalMapPair.second.first.getNodeKind().isSame(ASTNodeKind::getFromNodeKind<CXXMethodDecl>()));
+  EXPECT_TRUE(GlobalMapPair.second.second.isSame(ASTNodeKind::getFromNodeKind<FunctionDecl>()));
 
   auto GlobalMethodNode = GlobalBoundNodes[0].getNodeAs<FunctionDecl>("method");
   EXPECT_TRUE(GlobalMethodNode != nullptr);
@@ -1737,6 +1742,12 @@ TEST(MatchFinderAPI, matchesDynamic) {
   auto MethodBoundNodes = matchDynamic(Matcher, *GlobalMethodNode, astUnit->getASTContext());
   EXPECT_EQ(MethodBoundNodes.size(), 1u);
   EXPECT_EQ(MethodBoundNodes[0].getMap().size(), 1u);
+  auto MethodMapPair = *MethodBoundNodes[0].getMap().begin();
+  EXPECT_TRUE(MethodMapPair.second.first.getNodeKind().isSame(ASTNodeKind::getFromNodeKind<CXXMethodDecl>()));
+  EXPECT_TRUE(MethodMapPair.second.second.isSame(ASTNodeKind::getFromNodeKind<FunctionDecl>()));
+  EXPECT_EQ(MethodMapPair.second.first, GlobalMapPair.second.first);
+  EXPECT_TRUE(MethodMapPair.second.second.isSame(GlobalMapPair.second.second));
+
 
   auto MethodNode = MethodBoundNodes[0].getNodeAs<FunctionDecl>("method");
   EXPECT_EQ(MethodNode, GlobalMethodNode);
