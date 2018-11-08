@@ -597,6 +597,24 @@ void processAcceptableMatchers(ArrayRef<ArgKind> AcceptedTypes, T func) {
   }
 }
 
+std::vector<MatchingMatcher>
+Registry::getMatchingMatchers(ast_type_traits::ASTNodeKind StaticType) {
+  std::vector<MatchingMatcher> Result;
+
+  std::vector<ArgKind> AcceptedTypes;
+  AcceptedTypes.push_back(StaticType);
+
+  processAcceptableMatchers(
+      AcceptedTypes, [&Result](StringRef Name, const MatcherDescriptor &Matcher,
+                               std::set<ASTNodeKind> &RetKinds,
+                               std::vector<std::vector<ArgKind>> ArgsKinds,
+                               unsigned MaxSpecificity) {
+        Result.emplace_back((Name + "()").str());
+      });
+
+  return Result;
+}
+
 std::vector<MatcherCompletion>
 Registry::getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes) {
   std::vector<MatcherCompletion> Completions;

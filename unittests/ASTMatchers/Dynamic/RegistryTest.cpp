@@ -555,6 +555,32 @@ TEST_F(RegistryTest, EqualsMatcher) {
   EXPECT_FALSE(matches("int x = 120;", CharStmt));
 }
 
+TEST_F(RegistryTest, MatchingMatchers) {
+
+  auto Matchers = Registry::getMatchingMatchers(
+      ast_type_traits::ASTNodeKind::getFromNodeKind<FunctionDecl>());
+
+  auto Contains = [](std::vector<MatchingMatcher> const &C, StringRef Name) {
+    return std::find_if(C.begin(), C.end(), [Name](const MatchingMatcher &M) {
+             return M.MatcherString == Name;
+           }) != C.end();
+  };
+
+  EXPECT_TRUE(Contains(Matchers, "isPublic()"));
+  EXPECT_TRUE(Contains(Matchers, "hasName()"));
+  EXPECT_TRUE(Contains(Matchers, "hasType()"));
+  EXPECT_TRUE(Contains(Matchers, "hasTypeLoc()"));
+  EXPECT_TRUE(Contains(Matchers, "parameterCountIs()"));
+
+  EXPECT_TRUE(!Contains(Matchers, "decl()"));
+  EXPECT_TRUE(!Contains(Matchers, "namedDecl()"));
+  EXPECT_TRUE(!Contains(Matchers, "valueDecl()"));
+  EXPECT_TRUE(!Contains(Matchers, "declaratorDecl()"));
+  EXPECT_TRUE(!Contains(Matchers, "functionDecl()"));
+
+  EXPECT_TRUE(Contains(Matchers, "cxxMethodDecl()"));
+}
+
 } // end anonymous namespace
 } // end namespace dynamic
 } // end namespace ast_matchers

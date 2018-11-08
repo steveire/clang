@@ -63,6 +63,12 @@ struct MatcherCompletion {
   unsigned Specificity;
 };
 
+struct MatchingMatcher {
+  MatchingMatcher(std::string MatcherString)
+      : MatcherString(std::move(MatcherString)) {}
+  std::string MatcherString;
+};
+
 class Registry {
 public:
   Registry() = delete;
@@ -95,6 +101,11 @@ public:
   /// should be convertible to some type in \p AcceptedTypes.
   static std::vector<MatcherCompletion>
   getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes);
+
+  /// Compute matchers which can be used within a matcher of
+  /// type @p StaticType.
+  static std::vector<MatchingMatcher>
+  getMatchingMatchers(ast_type_traits::ASTNodeKind StaticType);
 
   /// Construct a matcher from the registry.
   ///
