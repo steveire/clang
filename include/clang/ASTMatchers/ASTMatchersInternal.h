@@ -282,6 +282,10 @@ public:
   virtual bool dynMatches(const ast_type_traits::DynTypedNode &DynNode,
                           ASTMatchFinder *Finder,
                           BoundNodesTreeBuilder *Builder) const = 0;
+
+  virtual llvm::Optional<ast_type_traits::TraversalKind> TraversalKind() const {
+    return llvm::None;
+  }
 };
 
 /// Generic interface for matchers on an AST node of type T.
@@ -991,7 +995,7 @@ public:
                   std::is_base_of<QualType, T>::value,
                   "unsupported type for recursive matching");
     return matchesChildOf(ast_type_traits::DynTypedNode::create(Node),
-                          Matcher, Builder, Traverse, Bind);
+                          getASTContext(), Matcher, Builder, Traverse, Bind);
   }
 
   template <typename T>
@@ -1007,7 +1011,7 @@ public:
                   std::is_base_of<QualType, T>::value,
                   "unsupported type for recursive matching");
     return matchesDescendantOf(ast_type_traits::DynTypedNode::create(Node),
-                               Matcher, Builder, Bind);
+                               getASTContext(), Matcher, Builder, Bind);
   }
 
   // FIXME: Implement support for BindKind.
@@ -1022,24 +1026,26 @@ public:
                       std::is_base_of<TypeLoc, T>::value,
                   "type not allowed for recursive matching");
     return matchesAncestorOf(ast_type_traits::DynTypedNode::create(Node),
-                             Matcher, Builder, MatchMode);
+                             getASTContext(), Matcher, Builder, MatchMode);
   }
 
   virtual ASTContext &getASTContext() const = 0;
 
 protected:
   virtual bool matchesChildOf(const ast_type_traits::DynTypedNode &Node,
-                              const DynTypedMatcher &Matcher,
+                              ASTContext &Ctx, const DynTypedMatcher &Matcher,
                               BoundNodesTreeBuilder *Builder,
                               ast_type_traits::TraversalKind Traverse,
                               BindKind Bind) = 0;
 
   virtual bool matchesDescendantOf(const ast_type_traits::DynTypedNode &Node,
+                                   ASTContext &Ctx,
                                    const DynTypedMatcher &Matcher,
                                    BoundNodesTreeBuilder *Builder,
                                    BindKind Bind) = 0;
 
   virtual bool matchesAncestorOf(const ast_type_traits::DynTypedNode &Node,
+                                 ASTContext &Ctx,
                                  const DynTypedMatcher &Matcher,
                                  BoundNodesTreeBuilder *Builder,
                                  AncestorMatchMode MatchMode) = 0;
@@ -1148,6 +1154,28 @@ struct ArgumentAdaptingMatcherFunc {
   template <typename T>
   Adaptor<T> operator()(const Matcher<T> &InnerMatcher) const {
     return create(InnerMatcher);
+  }
+};
+
+template <typename T>
+class TraversalMatcher : public WrapperMatcherInterface<T> {
+  ast_type_traits::TraversalKind Traversal;
+
+public:
+  explicit TraversalMatcher(ast_type_traits::TraversalKind TK,
+                            const Matcher<T> &ChildMatcher)
+      : TraversalMatcher::WrapperMatcherInterface(ChildMatcher), Traversal(TK) {
+  }
+
+  bool matches(const T &Node, ASTMatchFinder *Finder,
+               BoundNodesTreeBuilder *Builder) const override {
+    return this->InnerMatcher.matches(
+        ast_type_traits::DynTypedNode::create(Node), Finder, Builder);
+  }
+
+  llvm::Optional<ast_type_traits::TraversalKind>
+  TraversalKind() const override {
+    return Traversal;
   }
 };
 

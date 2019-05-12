@@ -98,6 +98,31 @@ enum FloatingRank {
   Float16Rank, HalfRank, FloatRank, DoubleRank, LongDoubleRank, Float128Rank
 };
 
+const Expr *ASTContext::traverseIgnored(const Expr *E) const {
+  return traverseIgnored(const_cast<Expr *>(E));
+}
+
+Expr *ASTContext::traverseIgnored(Expr *E) const {
+  if (!E)
+    return nullptr;
+
+  switch (Traversal) {
+  case ast_type_traits::TK_AsIs:
+    return E;
+  case ast_type_traits::TK_IgnoreImplicitCastsAndParentheses:
+    return E->IgnoreParenImpCasts();
+  }
+  llvm_unreachable("Invalid Traversal type!");
+}
+
+ast_type_traits::DynTypedNode
+ASTContext::traverseIgnored(const ast_type_traits::DynTypedNode &N) const {
+  if (auto *E = N.get<Expr>()) {
+    return ast_type_traits::DynTypedNode::create(*traverseIgnored(E));
+  }
+  return N;
+}
+
 RawComment *ASTContext::getRawCommentForDeclNoCache(const Decl *D) const {
   assert(D);
 
@@ -902,7 +927,7 @@ public:
 
 void ASTContext::setTraversalScope(const std::vector<Decl *> &TopLevelDecls) {
   TraversalScope = TopLevelDecls;
-  Parents.reset();
+  Parents.clear();
 }
 
 void ASTContext::AddDeallocation(void (*Callback)(void*), void *Data) {
@@ -10279,7 +10304,8 @@ createDynTypedNode(const NestedNameSpecifierLoc &Node) {
 class ASTContext::ParentMap::ASTVisitor
     : public RecursiveASTVisitor<ASTVisitor> {
 public:
-  ASTVisitor(ParentMap &Map) : Map(Map) {}
+  ASTVisitor(ParentMap &Map, ASTContext &Context)
+      : Map(Map), Context(Context) {}
 
 private:
   friend class RecursiveASTVisitor<ASTVisitor>;
@@ -10349,8 +10375,12 @@ private:
   }
 
   bool TraverseStmt(Stmt *StmtNode) {
+    Stmt *FilteredNode = StmtNode;
+    if (auto *ExprNode = dyn_cast_or_null<Expr>(FilteredNode))
+      FilteredNode = Context.traverseIgnored(ExprNode);
     return TraverseNode(
-        StmtNode, StmtNode, [&] { return VisitorBase::TraverseStmt(StmtNode); },
+        FilteredNode, FilteredNode,
+        [&] { return VisitorBase::TraverseStmt(FilteredNode); },
         &Map.PointerParents);
   }
 
@@ -10369,20 +10399,22 @@ private:
   }
 
   ParentMap &Map;
+  ASTContext &Context;
   llvm::SmallVector<ast_type_traits::DynTypedNode, 16> ParentStack;
 };
 
 ASTContext::ParentMap::ParentMap(ASTContext &Ctx) {
-  ASTVisitor(*this).TraverseAST(Ctx);
+  ASTVisitor(*this, Ctx).TraverseAST(Ctx);
 }
 
 ASTContext::DynTypedNodeList
 ASTContext::getParents(const ast_type_traits::DynTypedNode &Node) {
-  if (!Parents)
+  std::unique_ptr<ParentMap> &P = Parents[Traversal];
+  if (!P)
     // We build the parent map for the traversal scope (usually whole TU), as
     // hasAncestor can escape any subtree.
-    Parents = llvm::make_unique<ParentMap>(*this);
-  return Parents->getParents(Node);
+    P = llvm::make_unique<ParentMap>(*this);
+  return P->getParents(Node);
 }
 
 bool

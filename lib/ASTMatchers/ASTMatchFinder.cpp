@@ -59,10 +59,12 @@ struct MatchKey {
   DynTypedMatcher::MatcherIDType MatcherID;
   ast_type_traits::DynTypedNode Node;
   BoundNodesTreeBuilder BoundNodes;
+  ast_type_traits::TraversalKind Traversal = ast_type_traits::TK_AsIs;
 
   bool operator<(const MatchKey &Other) const {
-    return std::tie(MatcherID, Node, BoundNodes) <
-           std::tie(Other.MatcherID, Other.Node, Other.BoundNodes);
+    return std::tie(MatcherID, Node, BoundNodes, Traversal) <
+           std::tie(Other.MatcherID, Other.Node, Other.BoundNodes,
+                    Other.Traversal);
   }
 };
 
@@ -143,6 +145,8 @@ public:
 
     ScopedIncrement ScopedDepth(&CurrentDepth);
     Stmt *StmtToTraverse = StmtNode;
+    if (auto *ExprNode = dyn_cast_or_null<Expr>(StmtNode))
+      StmtToTraverse = Finder->getASTContext().traverseIgnored(ExprNode);
     if (Traversal ==
         ast_type_traits::TraversalKind::TK_IgnoreImplicitCastsAndParentheses) {
       if (Expr *ExprNode = dyn_cast_or_null<Expr>(StmtNode))
@@ -384,6 +388,7 @@ public:
 
   // Matches children or descendants of 'Node' with 'BaseMatcher'.
   bool memoizedMatchesRecursively(const ast_type_traits::DynTypedNode &Node,
+                                  ASTContext &Ctx,
                                   const DynTypedMatcher &Matcher,
                                   BoundNodesTreeBuilder *Builder, int MaxDepth,
                                   ast_type_traits::TraversalKind Traversal,
@@ -398,6 +403,7 @@ public:
     Key.Node = Node;
     // Note that we key on the bindings *before* the match.
     Key.BoundNodes = *Builder;
+    Key.Traversal = Ctx.getTraversalKind();
 
     MemoizationMap::iterator I = ResultCache.find(Key);
     if (I != ResultCache.end()) {
@@ -434,36 +440,36 @@ public:
 
   // Implements ASTMatchFinder::matchesChildOf.
   bool matchesChildOf(const ast_type_traits::DynTypedNode &Node,
-                      const DynTypedMatcher &Matcher,
+                      ASTContext &Ctx, const DynTypedMatcher &Matcher,
                       BoundNodesTreeBuilder *Builder,
                       ast_type_traits::TraversalKind Traversal,
                       BindKind Bind) override {
     if (ResultCache.size() > MaxMemoizationEntries)
       ResultCache.clear();
-    return memoizedMatchesRecursively(Node, Matcher, Builder, 1, Traversal,
+    return memoizedMatchesRecursively(Node, Ctx, Matcher, Builder, 1, Traversal,
                                       Bind);
   }
   // Implements ASTMatchFinder::matchesDescendantOf.
   bool matchesDescendantOf(const ast_type_traits::DynTypedNode &Node,
-                           const DynTypedMatcher &Matcher,
+                           ASTContext &Ctx, const DynTypedMatcher &Matcher,
                            BoundNodesTreeBuilder *Builder,
                            BindKind Bind) override {
     if (ResultCache.size() > MaxMemoizationEntries)
       ResultCache.clear();
-    return memoizedMatchesRecursively(Node, Matcher, Builder, INT_MAX,
+    return memoizedMatchesRecursively(Node, Ctx, Matcher, Builder, INT_MAX,
                                       ast_type_traits::TraversalKind::TK_AsIs,
                                       Bind);
   }
   // Implements ASTMatchFinder::matchesAncestorOf.
   bool matchesAncestorOf(const ast_type_traits::DynTypedNode &Node,
-                         const DynTypedMatcher &Matcher,
+                         ASTContext &Ctx, const DynTypedMatcher &Matcher,
                          BoundNodesTreeBuilder *Builder,
                          AncestorMatchMode MatchMode) override {
     // Reset the cache outside of the recursive call to make sure we
     // don't invalidate any iterators.
     if (ResultCache.size() > MaxMemoizationEntries)
       ResultCache.clear();
-    return memoizedMatchesAncestorOfRecursively(Node, Matcher, Builder,
+    return memoizedMatchesAncestorOfRecursively(Node, Ctx, Matcher, Builder,
                                                 MatchMode);
   }
 
@@ -628,16 +634,19 @@ private:
   // allow simple memoization on the ancestors. Thus, we only memoize as long
   // as there is a single parent.
   bool memoizedMatchesAncestorOfRecursively(
-      const ast_type_traits::DynTypedNode &Node, const DynTypedMatcher &Matcher,
-      BoundNodesTreeBuilder *Builder, AncestorMatchMode MatchMode) {
+      const ast_type_traits::DynTypedNode &Node, ASTContext &Ctx,
+      const DynTypedMatcher &Matcher, BoundNodesTreeBuilder *Builder,
+      AncestorMatchMode MatchMode) {
     // For AST-nodes that don't have an identity, we can't memoize.
     if (!Builder->isComparable())
-      return matchesAncestorOfRecursively(Node, Matcher, Builder, MatchMode);
+      return matchesAncestorOfRecursively(Node, Ctx, Matcher, Builder,
+                                          MatchMode);
 
     MatchKey Key;
     Key.MatcherID = Matcher.getID();
     Key.Node = Node;
     Key.BoundNodes = *Builder;
+    Key.Traversal = Ctx.getTraversalKind();
 
     // Note that we cannot use insert and reuse the iterator, as recursive
     // calls to match might invalidate the result cache iterators.
@@ -649,8 +658,8 @@ private:
 
     MemoizedMatchResult Result;
     Result.Nodes = *Builder;
-    Result.ResultOfMatch =
-        matchesAncestorOfRecursively(Node, Matcher, &Result.Nodes, MatchMode);
+    Result.ResultOfMatch = matchesAncestorOfRecursively(
+        Node, Ctx, Matcher, &Result.Nodes, MatchMode);
 
     MemoizedMatchResult &CachedResult = ResultCache[Key];
     CachedResult = std::move(Result);
@@ -660,6 +669,7 @@ private:
   }
 
   bool matchesAncestorOfRecursively(const ast_type_traits::DynTypedNode &Node,
+                                    ASTContext &Ctx,
                                     const DynTypedMatcher &Matcher,
                                     BoundNodesTreeBuilder *Builder,
                                     AncestorMatchMode MatchMode) {
@@ -693,8 +703,8 @@ private:
         return true;
       }
       if (MatchMode != ASTMatchFinder::AMM_ParentOnly) {
-        return memoizedMatchesAncestorOfRecursively(Parent, Matcher, Builder,
-                                                    MatchMode);
+        return memoizedMatchesAncestorOfRecursively(Parent, Ctx, Matcher,
+                                                    Builder, MatchMode);
         // Once we get back from the recursive call, the result will be the
         // same as the parent's result.
       }
